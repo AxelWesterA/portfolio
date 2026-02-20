@@ -25,14 +25,14 @@ export default function Home() {
 
         <div className="flex flex-wrap justify-center gap-6">
           <Link 
-            to="/projects" 
+            to="/Projects" 
             className="px-10 py-4 bg-purple-600 rounded-full font-bold text-lg hover:bg-purple-500 transition-all shadow-lg shadow-purple-500/20"
           >
             Мои работы
           </Link>
           
           <Link 
-            to="/contact" 
+            to="Contact" 
             className="px-10 py-4 border border-white/10 rounded-full font-bold text-lg hover:bg-white/5 transition-all"
           >
             Связаться
