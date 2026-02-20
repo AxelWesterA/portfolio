@@ -10,39 +10,36 @@ export default function Home() {
       <AnimatedBackground />
 
       {/* 2. КОНТЕНТ: Оборачиваем в z-10, чтобы текст был поверх кристаллов */}
-      <div className="relative z-10 text-center px-6">
-        <h1 className="text-7xl md:text-[10rem] font-black tracking-tighter leading-[0.8] mb-10">
-          ALEKSANDER <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-fuchsia-500 to-indigo-500">
-            DIGITAL
-          </span>
-        </h1>
-        
-        <p className="text-gray-400 text-xl md:text-2xl max-w-2xl mx-auto leading-relaxed mb-12 font-medium">
-          Создаю современные веб-интерфейсы с характером. 
-          Люблю минимализм, темные темы и чистый код.
-        </p>
-
-        <div className="flex flex-wrap justify-center gap-6">
-          <div className="flex flex-wrap justify-center gap-6">
- <div className="flex flex-wrap justify-center gap-6 relative z-30"> 
-  <Link 
-    to="/projects" 
-    className="inline-block px-10 py-4 bg-purple-600 text-white rounded-full font-bold text-lg hover:bg-purple-500 transition-all shadow-lg shadow-purple-500/20 cursor-pointer"
-  >
-    Мои работы
-  </Link>
+      <div className="relative z-50 text-center px-6"> {/* Подняли до z-50 */}
+  <h1 className="text-7xl md:text-[10rem] font-black tracking-tighter leading-[0.8] mb-10">
+    ALEKSANDER <br />
+    <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-fuchsia-500 to-indigo-500">
+      DIGITAL
+    </span>
+  </h1>
   
-  <Link 
-    to="/contact" 
-    className="inline-block px-10 py-4 border border-white/20 text-white rounded-full font-bold text-lg hover:bg-white/10 transition-all cursor-pointer"
-  >
-    Связаться
-  </Link>
+  <p className="text-gray-400 text-xl md:text-2xl max-w-2xl mx-auto leading-relaxed mb-12 font-medium">
+    Создаю современные веб-интерфейсы с характером. 
+    Люблю минимализм, темные темы и чистый код.
+  </p>
+
+  {/* Убрали лишние обертки, оставили одну с z-50 */}
+  <div className="flex flex-wrap justify-center gap-6 relative z-50"> 
+    <Link 
+      to="/projects" 
+      className="inline-block px-10 py-4 bg-purple-600 text-white rounded-full font-bold text-lg hover:bg-purple-500 transition-all shadow-lg shadow-purple-500/20 cursor-pointer"
+    >
+      Мои работы
+    </Link>
+    
+    <Link 
+      to="/contact" 
+      className="inline-block px-10 py-4 border border-white/20 text-white rounded-full font-bold text-lg hover:bg-white/10 transition-all cursor-pointer"
+    >
+      Связаться
+    </Link>
+  </div>
 </div>
-</div>
-        </div>
-      </div>
 
       {/* 3. ДЕКОР: Дополнительное мягкое свечение внизу для глубины */}
       <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-t from-[#050505] to-transparent z-20"></div>
