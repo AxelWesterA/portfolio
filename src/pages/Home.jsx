@@ -25,19 +25,21 @@ export default function Home() {
 
         <div className="flex flex-wrap justify-center gap-6">
           <div className="flex flex-wrap justify-center gap-6">
+ <div className="flex flex-wrap justify-center gap-6 relative z-30"> 
   <Link 
-    to="/projects"  {/* С МАЛЕНЬКОЙ БУКВЫ */}
-    className="px-10 py-4 bg-purple-600 rounded-full font-bold text-lg hover:bg-purple-500 transition-all shadow-lg shadow-purple-500/20"
+    to="/projects" 
+    className="inline-block px-10 py-4 bg-purple-600 text-white rounded-full font-bold text-lg hover:bg-purple-500 transition-all shadow-lg shadow-purple-500/20 cursor-pointer"
   >
     Мои работы
   </Link>
   
   <Link 
-    to="/contact"   {/* С МАЛЕНЬКОЙ БУКВЫ */}
-    className="px-10 py-4 border border-white/10 rounded-full font-bold text-lg hover:bg-white/5 transition-all"
+    to="/contact" 
+    className="inline-block px-10 py-4 border border-white/20 text-white rounded-full font-bold text-lg hover:bg-white/10 transition-all cursor-pointer"
   >
     Связаться
   </Link>
+</div>
 </div>
         </div>
       </div>
