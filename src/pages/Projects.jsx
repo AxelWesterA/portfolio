@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
 
 export default function Projects() {
@@ -7,88 +7,63 @@ export default function Projects() {
 
   useEffect(() => {
     async function fetchProjects() {
-  try {
-    const { data, error } = await supabase.from('projects').select('*');
-    if (error) throw error;
-    setProjects(data || []);
-  } catch (err) {
-    console.error("ПОЙМАЛИ ОШИБКУ:", err.message);
-    setProjects([]); // Ставим пустой массив, чтобы .map не ломался
-  } finally {
-    setLoading(false);
-  }
-}
-
+      const { data, error } = await supabase.from('projects').select('*');
+      if (!error) setProjects(data);
+      setLoading(false);
+    }
     fetchProjects();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-purple-500"></div>
-      </div>
-    );
-  }
-
   return (
-    <div className="relative">
-      {/* Декоративное свечение на фоне */}
-      <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-600/10 blur-[120px] rounded-full"></div>
+    /* Контейнер с overflow-x-hidden, чтобы ничего не вылезало вбок */
+    <div className="max-w-6xl mx-auto w-full overflow-x-hidden px-2">
+      <header className="mb-10">
+        <h1 className="text-4xl md:text-6xl font-black tracking-tighter uppercase italic">
+          Проекты<span className="text-purple-500">.</span>
+        </h1>
+        <p className="text-gray-400 mt-4 text-lg">Выбранные работы и цифровые эксперименты</p>
+      </header>
 
-      <h2 className="text-5xl font-black mb-16 tracking-tighter italic uppercase">
-        Selected <span className="text-purple-500 underline decoration-purple-500/30 underline-offset-8">Works</span>
-      </h2>
-
-      {projects.length === 0 ? (
-        <p className="text-gray-500 text-center py-20 text-xl italic">
-          Тут пока пусто... Добавь первый проект в таблицу Supabase!
-        </p>
+      {loading ? (
+        <div className="flex justify-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-purple-500"></div>
+        </div>
       ) : (
-       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
-          {projects.map((p) => (
+        /* Сетка проектов: 1 колонка на мобайле, 2 на планшете, 3 на ПК */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          {projects.map((project) => (
             <div 
-              key={p.id} 
-              className="group relative p-[1px] bg-gradient-to-br from-white/20 via-transparent to-transparent rounded-[2rem] transition-all duration-500 hover:scale-[1.01]"
+              key={project.id} 
+              className="group flex flex-col justify-between bg-[#0A0A0A] border border-white/5 rounded-3xl p-6 md:p-8 hover:border-purple-500/50 transition-all duration-500"
             >
-              {/* Внутреннее наполнение карточки (эффект стекла) */}
-              <div className="bg-[#0f0f0f]/90 backdrop-blur-2xl p-8 rounded-[1.95rem] h-full flex flex-col border border-white/5">
-                <div className="flex justify-between items-start mb-6">
-                  <div className="h-[2px] w-12 bg-purple-500 rounded-full group-hover:w-24 transition-all duration-500"></div>
-                  <span className="text-[10px] font-mono text-gray-600 tracking-[0.3em]">0{p.id}</span>
-                </div>
-
-                <h3 className="text-2xl font-bold mb-4 group-hover:text-purple-400 transition-colors">
-                  {p.title}
+              <div>
+                <h3 className="text-xl md:text-2xl font-bold mb-3 group-hover:text-purple-400 transition-colors break-words">
+                  {project.title}
                 </h3>
                 
-                <p className="text-gray-400 leading-relaxed mb-8 flex-grow">
-                  {p.desc}
+                <p className="text-gray-400 text-sm md:text-base leading-relaxed mb-6 line-clamp-4 break-words">
+                  {project.description}
                 </p>
-
-                {/* Вывод массива технологий */}
+                
+                {/* Тэги */}
                 <div className="flex flex-wrap gap-2 mb-8">
-  {Array.isArray(p.tech) ? (
-    p.tech.map((t) => (
-      <span key={t} className="text-[10px] uppercase tracking-widest font-bold px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-300">
-        {t}
-      </span>
-    ))
-  ) : (
-    /* Если это строка, а не массив, просто выводим текстом */
-    <span className="text-[10px] text-purple-300">{p.tech}</span>
-  )}
-</div>
-
-                <a 
-                  href={p.link || "#"} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center text-xs font-black tracking-widest text-white hover:text-purple-400 transition-colors"
-                >
-                  LIVE PREVIEW 
-                  <span className="ml-3 transform group-hover:translate-x-2 transition-transform duration-300">→</span>
-                </a>
+                  {project.tags?.split(',').map(tag => (
+                    <span key={tag} className="text-[10px] uppercase tracking-widest bg-white/5 px-3 py-1 rounded-full border border-white/10 text-gray-300">
+                      {tag.trim()}
+                    </span>
+                  ))}
+                </div>
               </div>
+
+              {/* Кнопка всегда прижата к низу карточки */}
+              <a 
+                href={project.link} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-block w-full text-center py-4 bg-white text-black rounded-2xl font-bold text-sm hover:bg-purple-600 hover:text-white transition-all duration-300"
+              >
+                Открыть проект
+              </a>
             </div>
           ))}
         </div>
