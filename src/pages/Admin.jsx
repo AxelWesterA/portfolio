@@ -135,33 +135,59 @@ export default function Admin() {
 
       {/* Форма (скрыта для сообщений) */}
       {activeTab !== 'messages' && (
-        <form onSubmit={handleSubmit} className="grid gap-6 mb-20 p-8 md:p-12 bg-[#0A0A0A] border border-white/5 rounded-[3rem] shadow-xl">
-          <div className="flex justify-between items-center">
-            <h2 className="text-3xl font-black uppercase italic tracking-tighter">
-              {editingId ? 'Edit' : 'Create'} <span className="text-purple-500">{activeTab}</span>
-            </h2>
-            {editingId && (
-              <button type="button" onClick={() => {setEditingId(null); setForm({title:'', desc:'', tech:'', link:'', content:'', image_url:''})}} className="text-[10px] text-red-500 font-bold uppercase tracking-widest hover:underline">Cancel</button>
-            )}
+  <form onSubmit={handleSubmit} className="grid gap-6 mb-20 p-8 md:p-12 bg-[#0A0A0A] border border-white/5 rounded-[3rem] shadow-xl">
+    {/* ... заголовок и инпут титула остаются прежними ... */}
+    <h2 className="text-3xl font-black uppercase italic tracking-tighter mb-2">
+      {editingId ? 'Edit' : 'Create'} <span className="text-purple-500">{activeTab}</span>
+    </h2>
+    <input placeholder="Заголовок" className="bg-black border border-white/10 p-5 rounded-2xl outline-none focus:border-purple-500 text-white" value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
+    
+    {activeTab === 'projects' ? (
+      <>
+        <input placeholder="Технологии (React, Node...)" className="bg-black border border-white/10 p-5 rounded-2xl outline-none focus:border-purple-500 text-white" value={form.tech} onChange={e => setForm({...form, tech: e.target.value})} />
+        <input placeholder="Ссылка на проект" className="bg-black border border-white/10 p-5 rounded-2xl outline-none focus:border-purple-500 text-white" value={form.link} onChange={e => setForm({...form, link: e.target.value})} />
+        <textarea placeholder="Описание" className="bg-black border border-white/10 p-5 rounded-2xl h-32 outline-none focus:border-purple-500 text-white resize-none" value={form.desc} onChange={e => setForm({...form, desc: e.target.value})} />
+      </>
+    ) : (
+      <>
+        {/* Поле для пути к картинке */}
+        <div className="grid gap-2">
+          <label className="text-[10px] text-gray-500 uppercase tracking-[0.3em] ml-2">Путь к фото (напр. /uploads/image.jpg)</label>
+          <input 
+            placeholder="/uploads/my-post.jpg" 
+            className="bg-black border border-white/10 p-5 rounded-2xl outline-none focus:border-purple-500 text-white transition-all" 
+            value={form.image_url} 
+            onChange={e => setForm({...form, image_url: e.target.value})} 
+          />
+        </div>
+
+        {/* Превью картинки */}
+        {form.image_url && (
+          <div className="w-full h-44 rounded-2xl overflow-hidden border border-white/10 bg-black flex items-center justify-center">
+            <img 
+              src={form.image_url} 
+              alt="Preview" 
+              className="w-full h-full object-cover"
+              onError={(e) => e.target.style.display = 'none'}
+              onLoad={(e) => e.target.style.display = 'block'}
+            />
           </div>
-          
-          <input placeholder="Заголовок" className="bg-black border border-white/10 p-5 rounded-2xl outline-none focus:border-purple-500 text-white" value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
-          
-          {activeTab === 'projects' ? (
-            <>
-              <input placeholder="Технологии (React, Node...)" className="bg-black border border-white/10 p-5 rounded-2xl outline-none focus:border-purple-500 text-white" value={form.tech} onChange={e => setForm({...form, tech: e.target.value})} />
-              <input placeholder="Ссылка на проект" className="bg-black border border-white/10 p-5 rounded-2xl outline-none focus:border-purple-500 text-white" value={form.link} onChange={e => setForm({...form, link: e.target.value})} />
-              <textarea placeholder="Описание" className="bg-black border border-white/10 p-5 rounded-2xl h-32 outline-none focus:border-purple-500 text-white resize-none" value={form.desc} onChange={e => setForm({...form, desc: e.target.value})} />
-            </>
-          ) : (
-            <textarea placeholder="Контент поста (Markdown)..." className="bg-black border border-white/10 p-5 rounded-2xl h-64 outline-none focus:border-purple-500 text-white resize-none" value={form.content} onChange={e => setForm({...form, content: e.target.value})} />
-          )}
-          
-          <button className="py-5 bg-white text-black rounded-2xl font-black hover:bg-purple-600 hover:text-white transition-all uppercase tracking-widest text-xs">
-            {editingId ? 'Update Entry' : 'Publish Now'}
-          </button>
-        </form>
-      )}
+        )}
+
+        <textarea 
+          placeholder="Контент поста (Markdown)..." 
+          className="bg-black border border-white/10 p-5 rounded-2xl h-64 outline-none focus:border-purple-500 text-white resize-none" 
+          value={form.content} 
+          onChange={e => setForm({...form, content: e.target.value})} 
+        />
+      </>
+    )}
+    
+    <button className="py-5 bg-white text-black rounded-2xl font-black hover:bg-purple-600 hover:text-white transition-all uppercase tracking-widest text-xs">
+      {editingId ? 'Update Entry' : 'Publish Now'}
+    </button>
+  </form>
+)}
 
       {/* Список контента */}
       <div className="grid gap-4">
