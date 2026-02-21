@@ -28,9 +28,17 @@ function App() {
         <nav className="fixed top-0 left-0 right-0 z-[200] border-b border-white/5 bg-black/80 backdrop-blur-2xl">
           <div className="max-w-6xl mx-auto px-6 py-5 flex justify-between items-center">
             
-            <Link to="/" onClick={closeMenu} className="font-black text-2xl tracking-tighter hover:text-purple-400 transition-colors z-[210]">
-              V.
-            </Link>
+            <Link 
+  to="/" 
+  onClick={closeMenu} 
+  className="z-[210] hover:opacity-80 transition-opacity"
+>
+  <img 
+    src="src/2.png"  /* Путь к твоему логотипу */
+    alt="Logo" 
+    className="h-8 w-auto md:h-10" /* Высота: 32px на мобилках, 40px на десктопе */
+  />
+</Link>
             
             {/* Десктоп */}
             <div className="hidden md:flex gap-8 items-center text-sm font-bold uppercase tracking-widest">
