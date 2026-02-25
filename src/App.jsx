@@ -71,6 +71,7 @@ function App() {
             <Link to="/projects" onClick={closeMenu}>Projects</Link>
             <Link to="/blog" onClick={closeMenu}>Blog</Link>
             <Link to="/about" onClick={closeMenu}>About</Link>
+            <Link to="/game" onClick={closeMenu}>Game</Link>
             <Link to="/contact" onClick={closeMenu} className="text-purple-500 border-2 border-purple-500 px-10 py-3 rounded-full mt-4">Hire Me</Link>
           </div>
         </div>
