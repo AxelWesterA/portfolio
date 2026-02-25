@@ -36,7 +36,7 @@ function App() {
   className="z-[210] hover:opacity-80 transition-opacity"
 >
   <img 
-    src="../src/assets/2.png"  /* Путь к твоему логотипу */
+    src="./assets/2.png"  /* Путь к твоему логотипу */
     alt="Logo" 
     className="h-8 w-auto md:h-10" /* Высота: 32px на мобилках, 40px на десктопе */
   />
