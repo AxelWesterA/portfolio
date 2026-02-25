@@ -1,12 +1,49 @@
 import { useEffect, useRef, useState } from 'react';
+import { createClient } from '@supabase/supabase-js';
+
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error("Supabase credentials are missing! Check your .env file.");
+}
+
+export const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default function Game() {
   const canvasRef = useRef(null);
   const requestRef = useRef();
+  
+  // Состояния игры
+  const [gameState, setGameState] = useState('MENU'); // MENU, LEVELS, ENDLESS, GAMEOVER
   const [level, setLevel] = useState(1);
   const [score, setScore] = useState(0);
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [playerName, setPlayerName] = useState('');
 
-const levels = [
+useEffect(() => {
+  const fetchLeaderboard = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('leaderboard')
+        .select('name, score')
+        .order('score', { ascending: false })
+        .limit(10);
+      
+      if (error) throw error;
+      setLeaderboard(data || []);
+    } catch (e) {
+      console.error("Ошибка загрузки рейтинга:", e.message);
+    }
+  };
+
+  fetchLeaderboard();
+}, [gameState]); // Обновляем при смене состояний (например, после игры)
+
+
+  // Данные уровней остаются те же (я сократил для примера, используй свои старые)
+ const levels = [
   { // Уровень 1: Обучение
     width: 1200, height: 400,
     plats: [
@@ -147,50 +184,94 @@ const levels = [
   }
 ];
 
+  const saveScore = async () => {
+    if (!playerName.trim()) {
+      alert("Пожалуйста, введи имя!");
+      return;
+    }
+
+    try {
+      // 1. Отправляем данные в Supabase
+      const { error } = await supabase
+        .from('leaderboard')
+        .insert([{ name: playerName, score: score }]);
+
+      if (error) throw error;
+
+      // 2. Сразу загружаем свежий ТОП, чтобы игрок увидел себя
+      const { data: freshData, error: fetchError } = await supabase
+        .from('leaderboard')
+        .select('name, score')
+        .order('score', { ascending: false })
+        .limit(10);
+
+      if (fetchError) throw fetchError;
+      
+      setLeaderboard(freshData || []);
+      
+      // 3. Сбрасываем состояние и выходим в меню
+      setGameState('MENU');
+      setScore(0);
+      setPlayerName('');
+    } catch (e) {
+      console.error("Ошибка при сохранении:", e.message);
+      alert("Не удалось сохранить результат. Проверь консоль!");
+    }
+  };
+
   useEffect(() => {
+    if (gameState === 'MENU' || gameState === 'GAMEOVER') return;
+
     const canvas = canvasRef.current;
-    if (!canvas) return;
     const ctx = canvas.getContext('2d');
     
     const resize = () => {
       canvas.width = window.innerWidth > 800 ? 800 : window.innerWidth - 40;
-      canvas.height = 400;
+      canvas.height = 500;
     };
     window.addEventListener('resize', resize);
     resize();
 
-    const currentLvl = levels[level - 1] || levels[0];
-    const player = { ...currentLvl.spawn, width: 30, height: 30, dy: 0, jumpForce: 13, gravity: 0.6, speed: 7, grounded: false };
-    const coins = currentLvl.coins.map(c => ({...c, collected: false}));
-    const button = { ...currentLvl.button };
-    const camera = { x: 0, y: 0 };
-    const keys = {};
-
-    // ФУНКЦИИ УПРАВЛЕНИЯ
-    const jump = () => {
-      if (player.grounded) {
-        player.dy = -player.jumpForce;
-        player.grounded = false;
-      }
+    const isEndless = gameState === 'ENDLESS';
+    const currentLvl = isEndless ? { width: canvas.width, height: 1000000 } : (levels[level - 1] || levels[0]);
+    
+    // Исправленный спавн: берем координаты из уровня или центра экрана
+    let player = { 
+      x: isEndless ? canvas.width / 2 - 15 : currentLvl.spawn.x, 
+      y: isEndless ? canvas.height - 150 : currentLvl.spawn.y, 
+      width: 30, height: 30, dy: 0, jumpForce: 14, gravity: 0.6, speed: 7, grounded: false 
     };
+
+    let platforms = isEndless ? [] : [...currentLvl.plats];
+    let coins = isEndless ? [] : currentLvl.coins.map(c => ({...c, collected: false}));
+    let button = isEndless ? { pressed: true } : { ...currentLvl.button, pressed: false };
+    let camera = { x: 0, y: 0 };
+    let keys = {};
+
+    // ГАРАНТИРОВАННАЯ ПЛАТФОРМА ПОД ИГРОКОМ ПРИ СПАВНЕ
+    if (isEndless) {
+      platforms.push({ x: player.x - 35, y: player.y + 50, w: 100, h: 15 }); // Стартовая платформа
+      for (let i = 1; i < 10; i++) {
+        platforms.push({ 
+          x: Math.random() * (canvas.width - 100), 
+          y: (canvas.height - 150) - (i * 120), 
+          w: 100, h: 15 
+        });
+      }
+    }
+
+    const jump = () => { if (player.grounded) { player.dy = -player.jumpForce; player.grounded = false; } };
 
     const handleKeyDown = (e) => {
-      if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "KeyW", "KeyA", "KeyD"].includes(e.code)) {
-        e.preventDefault();
-      }
+      if (["Space", "ArrowUp", "KeyW"].includes(e.code)) { e.preventDefault(); jump(); }
       keys[e.code] = true;
-      if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') jump();
-      // Чит-код для тестов (клавиша N)
-      if (e.code === 'KeyN') setLevel(prev => (prev < levels.length ? prev + 1 : 1));
     };
-
     const handleKeyUp = (e) => { keys[e.code] = false; };
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
 
     const update = () => {
-      // Движение
       if (keys['ArrowRight'] || keys['KeyD'] || keys['MobileRight']) player.x += player.speed;
       if (keys['ArrowLeft'] || keys['KeyA'] || keys['MobileLeft']) player.x -= player.speed;
 
@@ -199,98 +280,103 @@ const levels = [
       player.grounded = false;
 
       // Коллизии платформ
-      currentLvl.plats.forEach(plat => {
-        if (plat.isDoor && button.pressed) return;
-        if (player.x < plat.x + plat.w && player.x + player.width > plat.x &&
-            player.y + player.height > plat.y && player.y + player.height < plat.y + 20 && player.dy >= 0) {
-          player.grounded = true;
-          player.dy = 0;
-          player.y = plat.y - player.height;
+      platforms.forEach(p => {
+        if (p.isDoor && button.pressed) return;
+        if (player.x < p.x + p.w && player.x + player.width > p.x &&
+            player.y + player.height > p.y && player.y + player.height < p.y + 20 && player.dy >= 0) {
+          player.grounded = true; 
+          player.dy = 0; 
+          player.y = p.y - player.height;
+          if (isEndless) player.dy = -player.jumpForce; // Doodle Jump эффект
         }
       });
 
-      // Кнопка
-      if (!button.pressed && player.x < button.x + button.w && player.x + player.width > button.x &&
-          player.y + player.height > button.y && player.y + player.height < button.y + 10) {
-        button.pressed = true;
-      }
+      // Сбор монеток (только в режиме уровней)
+      if (!isEndless) {
+        coins.forEach(c => {
+          if (!c.collected && Math.hypot((player.x + 15) - c.x, (player.y + 15) - c.y) < 30) {
+            c.collected = true;
+            setScore(s => s + 10);
+          }
+        });
 
-      // Монеты
-      coins.forEach(c => {
-        if (!c.collected && Math.hypot((player.x + 15) - c.x, (player.y + 15) - c.y) < 30) {
-          c.collected = true;
-          setScore(s => s + 10);
+        // Кнопка
+        if (!button.pressed && player.x < button.x + button.w && player.x + player.width > button.x &&
+            player.y + player.height > button.y && player.y + player.height < button.y + 10) {
+          button.pressed = true;
         }
-      });
 
-      // Портал
-      if (coins.every(c => c.collected)) {
-        if (Math.hypot((player.x + 15) - currentLvl.portal.x, (player.y + 15) - currentLvl.portal.y) < 40) {
+        // Портал
+        if (coins.every(c => c.collected) && Math.hypot((player.x + 15) - currentLvl.portal.x, (player.y + 15) - currentLvl.portal.y) < 40) {
           if (level < levels.length) setLevel(l => l + 1);
-          else { alert("ПОБЕДА!"); setLevel(1); setScore(0); }
+          else setGameState('GAMEOVER');
         }
       }
 
-      // Камера
-      camera.x = player.x - canvas.width / 2;
-      camera.y = player.y - canvas.height / 2;
-      camera.x = Math.max(0, Math.min(camera.x, currentLvl.width - canvas.width));
-      camera.y = Math.max(0, Math.min(camera.y, currentLvl.height - canvas.height));
-
-      // Смерть (падение)
-      if (player.y > currentLvl.height + 100) {
-        player.x = currentLvl.spawn.x;
-        player.y = currentLvl.spawn.y;
-        player.dy = 0;
+      // Логика бесконечного режима
+      if (isEndless) {
+        if (player.y < camera.y + 250) camera.y = player.y - 250;
+        platforms = platforms.filter(p => p.y < camera.y + canvas.height + 100);
+        while (platforms.length < 15) {
+          const lastP = platforms[platforms.length - 1];
+          platforms.push({
+            x: Math.random() * (canvas.width - 100),
+            y: lastP.y - (100 + Math.random() * 50),
+            w: 80, h: 15
+          });
+          setScore(s => s + 1);
+        }
+        if (player.y > camera.y + canvas.height) setGameState('GAMEOVER');
+      } else {
+        // Камера уровней
+        camera.x = Math.max(0, Math.min(player.x - canvas.width / 2, currentLvl.width - canvas.width));
+        camera.y = Math.max(0, Math.min(player.y - canvas.height / 2, currentLvl.height - canvas.height));
+        if (player.y > currentLvl.height + 100) { player.x = currentLvl.spawn.x; player.y = currentLvl.spawn.y; player.dy = 0; }
       }
     };
 
     const draw = () => {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.fillStyle = '#050505';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+      ctx.fillStyle = '#050505'; ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.translate(-camera.x, -camera.y);
 
       // Платформы
-      currentLvl.plats.forEach(p => {
+      platforms.forEach(p => {
         if (p.isDoor && button.pressed) return;
         ctx.fillStyle = p.isDoor ? '#ef4444' : '#8b5cf6';
-        ctx.shadowBlur = 10; ctx.shadowColor = ctx.fillStyle;
+        ctx.shadowBlur = 15; ctx.shadowColor = ctx.fillStyle;
         ctx.fillRect(p.x, p.y, p.w, p.h);
       });
 
-      // Кнопка
-      ctx.fillStyle = button.pressed ? '#22c55e' : '#f97316';
-      ctx.shadowColor = ctx.fillStyle;
-      ctx.fillRect(button.x, button.y, button.w, button.h);
+      // МОНЕТКИ (Отрисовка)
+      if (!isEndless) {
+        ctx.fillStyle = '#fbbf24'; ctx.shadowColor = '#fbbf24';
+        coins.forEach(c => {
+          if (!c.collected) {
+            ctx.beginPath();
+            ctx.arc(c.x, c.y, 6, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        });
 
-      // Монеты
-      ctx.fillStyle = '#fbbf24'; ctx.shadowColor = '#fbbf24';
-      coins.forEach(c => !c.collected && ctx.fillRect(c.x, c.y, 12, 12));
+        // Портал
+        if (coins.every(c => c.collected)) {
+          ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 4; ctx.shadowColor = '#22d3ee';
+          ctx.strokeRect(currentLvl.portal.x, currentLvl.portal.y, 40, 40);
+        }
+
+        // Кнопка
+        ctx.fillStyle = button.pressed ? '#22c55e' : '#f97316';
+        ctx.fillRect(button.x, button.y, button.w, button.h);
+      }
 
       // Игрок
-      ctx.fillStyle = '#fff'; ctx.shadowColor = '#fff';
+      ctx.fillStyle = '#fff'; ctx.shadowBlur = 20; ctx.shadowColor = '#fff';
       ctx.fillRect(player.x, player.y, player.width, player.height);
-
-      // Портал
-      if (coins.every(c => c.collected)) {
-        ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 4; ctx.shadowColor = '#22d3ee';
-        ctx.strokeRect(currentLvl.portal.x, currentLvl.portal.y, 40, 40);
-      }
     };
 
-    const loop = () => {
-      update();
-      draw();
-      requestRef.current = requestAnimationFrame(loop);
-    };
-
+    const loop = () => { update(); draw(); requestRef.current = requestAnimationFrame(loop); };
     loop();
-
-    // Экспортируем функции для мобильных кнопок в window, чтобы onClick в React их видел
-    window.mobileJump = jump;
-    window.setMobileKey = (key, val) => { keys[key] = val; };
 
     return () => {
       cancelAnimationFrame(requestRef.current);
@@ -298,42 +384,56 @@ const levels = [
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [level]);
+  }, [gameState, level]);
 
   return (
     <div className="flex flex-col items-center bg-black min-h-screen text-white p-4 font-sans select-none overflow-hidden">
-      <div className="flex justify-between w-full max-w-[800px] mb-4 uppercase font-black italic text-xl">
-        <span>LVL: {level}</span>
-        <span className="text-purple-500">Score: {score}</span>
-      </div>
-
-      <div className="relative border-4 border-white/5 rounded-[2rem] overflow-hidden shadow-2xl shadow-purple-500/10">
-        <canvas ref={canvasRef} className="block touch-none bg-black" />
-        
-        {/* МОБИЛЬНОЕ УПРАВЛЕНИЕ */}
-        <div className="absolute bottom-6 left-6 right-6 flex justify-between items-end md:hidden pointer-events-none">
-          <div className="flex gap-4 pointer-events-auto">
-            <button 
-              className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 active:scale-90 transition-transform"
-              onTouchStart={() => window.setMobileKey('MobileLeft', true)}
-              onTouchEnd={() => window.setMobileKey('MobileLeft', false)}
-            >←</button>
-            <button 
-              className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 active:scale-90 transition-transform"
-              onTouchStart={() => window.setMobileKey('MobileRight', true)}
-              onTouchEnd={() => window.setMobileKey('MobileRight', false)}
-            >→</button>
-          </div>
-          <button 
-            className="w-20 h-20 bg-purple-600/30 backdrop-blur-md rounded-full border-2 border-purple-500 pointer-events-auto active:scale-95 transition-all shadow-[0_0_20px_rgba(168,85,247,0.4)]"
-            onTouchStart={() => window.mobileJump()}
-          >UP</button>
-        </div>
-      </div>
       
-      <p className="mt-6 text-gray-500 text-[10px] tracking-[0.3em] uppercase">
-        {level === 1 ? "Collect all coins & find the button" : "Level " + level + " - Exploring..."}
-      </p>
+      {gameState === 'MENU' && (
+        <div className="flex flex-col items-center gap-6 mt-20 animate-in fade-in zoom-in duration-500">
+          <h1 className="text-6xl font-black italic tracking-tighter text-purple-500 shadow-purple-500/50 drop-shadow-lg">TMIFK RUN</h1>
+          <div className="flex gap-4">
+            <button onClick={() => setGameState('LEVELS')} className="px-8 py-4 bg-white text-black font-bold rounded-2xl hover:bg-purple-500 hover:text-white transition-all">УРОВНИ</button>
+            <button onClick={() => setGameState('ENDLESS')} className="px-8 py-4 border-2 border-white rounded-2xl font-bold hover:bg-white hover:text-black transition-all">БЕСКОНЕЧНЫЙ</button>
+          </div>
+          <div className="mt-10 w-full max-w-xs bg-white/5 p-6 rounded-3xl border border-white/10">
+            <h2 className="text-center text-gray-400 uppercase text-xs tracking-widest mb-4">Топ игроков</h2>
+            {leaderboard.map((item, i) => (
+              <div key={i} className="flex justify-between mb-2 font-mono text-sm">
+                <span>{i+1}. {item.name}</span>
+                <span className="text-purple-400">{item.score}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {gameState === 'GAMEOVER' && (
+        <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-6 backdrop-blur-xl">
+          <h2 className="text-4xl font-black mb-2">ИГРА ОКОНЧЕНА</h2>
+          <p className="text-purple-500 text-xl font-mono mb-6">ТВОЙ СЧЕТ: {score}</p>
+          <input 
+            type="text" 
+            placeholder="ВВЕДИ ИМЯ..." 
+            className="bg-white/10 border border-white/20 p-4 rounded-2xl mb-4 w-full max-w-xs text-center outline-none focus:border-purple-500 transition-all"
+            value={playerName}
+            onChange={(e) => setPlayerName(e.target.value)}
+          />
+          <button onClick={saveScore} className="w-full max-w-xs p-4 bg-purple-600 rounded-2xl font-bold hover:scale-105 transition-transform">СОХРАНИТЬ РЕКОРД</button>
+        </div>
+      )}
+
+      {(gameState === 'LEVELS' || gameState === 'ENDLESS') && (
+        <>
+          <div className="flex justify-between w-full max-w-[800px] mb-4 uppercase font-black italic text-xl">
+            <span>{gameState === 'ENDLESS' ? 'ENDLESS' : `LVL: ${level}`}</span>
+            <span className="text-purple-500">Score: {score}</span>
+          </div>
+          <div className="relative border-4 border-white/5 rounded-[2rem] overflow-hidden">
+            <canvas ref={canvasRef} className="block touch-none bg-black" />
+          </div>
+        </>
+      )}
     </div>
   );
 }
