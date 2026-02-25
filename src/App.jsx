@@ -6,6 +6,8 @@ import Blog from './pages/Blog';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Admin from './pages/Admin';
+import Game from './pages/Game';
+
 
 function App() {
   const [isOpen, setIsOpen] = useState(false);
@@ -45,6 +47,7 @@ function App() {
               <Link to="/projects" className="text-gray-400 hover:text-white transition">Projects</Link>
               <Link to="/blog" className="text-gray-400 hover:text-white transition">Blog</Link>
               <Link to="/about" className="text-gray-400 hover:text-white transition">About</Link>
+              <Link to="/game" className="text-gray-400 hover:text-white transition">Game</Link>
               <Link to="/contact" className="ml-4 px-6 py-2 bg-white text-black rounded-full hover:bg-purple-500 hover:text-white transition-all">
                 Hire Me
               </Link>
@@ -81,6 +84,7 @@ function App() {
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/game" element={<Game />} />
           </Routes>
         </main>
 
