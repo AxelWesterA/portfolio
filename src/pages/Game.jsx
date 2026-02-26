@@ -190,9 +190,10 @@ export default function Game() {
   }, [gameState, level]);
 
   return (
-    <div className="flex flex-col items-center bg-black min-h-screen text-white p-4 font-sans select-none overflow-hidden">
+    <div className="flex flex-col items-center bg-black min-h-screen text-white font-sans select-none overflow-hidden">
+      
       {gameState === 'MENU' && (
-        <div className="flex flex-col items-center gap-6 mt-10 w-full max-w-md">
+        <div className="flex flex-col items-center gap-6 mt-10 w-full max-w-md p-4">
           <h1 className="text-6xl font-black italic tracking-tighter text-purple-500">TMIFK RUN</h1>
           {!user ? (
             <form onSubmit={handleAuth} className="w-full bg-white/5 p-6 rounded-3xl border border-white/10 flex flex-col gap-4">
@@ -205,7 +206,7 @@ export default function Game() {
           ) : (
             <div className="flex flex-col items-center gap-4 w-full">
               <p className="text-gray-400">Привет, <span className="text-purple-400">{user.email}</span></p>
-              <div className="flex gap-4 w-full">
+              <div className="flex gap-4 w-full px-4">
                 <button onClick={() => setGameState('LEVELS')} className="flex-1 px-8 py-4 bg-white text-black font-bold rounded-2xl">УРОВНИ</button>
                 <button onClick={() => setGameState('ENDLESS')} className="flex-1 px-8 py-4 border-2 border-white rounded-2xl font-bold">БЕСКОНЕЧНЫЙ</button>
               </div>
@@ -235,37 +236,62 @@ export default function Game() {
       )}
 
       {(gameState === 'LEVELS' || gameState === 'ENDLESS') && (
-        <div className="w-full max-w-[800px] flex flex-col items-center">
-          <div className="flex justify-between w-full mb-4 uppercase font-black italic text-xl px-2">
-            <span>{gameState === 'ENDLESS' ? 'ENDLESS' : `LVL: ${level}`}</span>
-            <span className="text-purple-500">Score: {score}</span>
+        <div className="w-full h-screen flex flex-col items-center relative overflow-hidden">
+          {/* Инфо-панель сверху */}
+          <div className="absolute top-4 left-0 right-0 z-10 flex justify-between uppercase font-black italic text-xl px-6 pointer-events-none">
+            <span className="drop-shadow-lg">{gameState === 'ENDLESS' ? 'ENDLESS' : `LVL: ${level}`}</span>
+            <span className="text-purple-500 drop-shadow-lg">Score: {score}</span>
           </div>
-          <div className="relative border-4 border-white/10 rounded-[2rem] overflow-hidden shadow-2xl w-full aspect-[8/5]">
+          
+          {/* Контейнер игры */}
+          <div className="w-full h-full md:h-[500px] md:max-w-[800px] md:mt-16 md:rounded-[2rem] md:border-4 border-white/10 overflow-hidden relative shadow-2xl shadow-purple-500/10">
             <canvas ref={canvasRef} className="block w-full h-full touch-none bg-black" />
-            <div className="absolute inset-0 pointer-events-none flex items-end justify-between p-6">
-              <div className="flex gap-3 pointer-events-auto">
+            
+            {/* КНОПКИ УПРАВЛЕНИЯ */}
+            <div className="absolute inset-0 pointer-events-none flex items-end justify-between p-8 pb-12">
+              
+              {/* Лево / Право (всегда видны) */}
+              <div className="flex gap-4 pointer-events-auto">
                 <button 
                   onPointerDown={(e) => { e.preventDefault(); window.dispatchEvent(new KeyboardEvent('keydown', {code: 'ArrowLeft'})); }}
                   onPointerUp={(e) => { e.preventDefault(); window.dispatchEvent(new KeyboardEvent('keyup', {code: 'ArrowLeft'})); }}
                   onPointerLeave={(e) => { e.preventDefault(); window.dispatchEvent(new KeyboardEvent('keyup', {code: 'ArrowLeft'})); }}
-                  className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 active:bg-purple-500 flex items-center justify-center touch-none"
-                >←</button>
+                  className="w-20 h-20 bg-white/10 backdrop-blur-xl rounded-full border-2 border-white/20 active:bg-purple-500/50 flex items-center justify-center touch-none shadow-2xl"
+                >
+                  <span className="text-4xl">←</span>
+                </button>
                 <button 
                   onPointerDown={(e) => { e.preventDefault(); window.dispatchEvent(new KeyboardEvent('keydown', {code: 'ArrowRight'})); }}
                   onPointerUp={(e) => { e.preventDefault(); window.dispatchEvent(new KeyboardEvent('keyup', {code: 'ArrowRight'})); }}
                   onPointerLeave={(e) => { e.preventDefault(); window.dispatchEvent(new KeyboardEvent('keyup', {code: 'ArrowRight'})); }}
-                  className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 active:bg-purple-500 flex items-center justify-center touch-none"
-                >→</button>
+                  className="w-20 h-20 bg-white/10 backdrop-blur-xl rounded-full border-2 border-white/20 active:bg-purple-500/50 flex items-center justify-center touch-none shadow-2xl"
+                >
+                  <span className="text-4xl">→</span>
+                </button>
               </div>
-              <div className="pointer-events-auto">
-                <button 
-                  onPointerDown={(e) => { e.preventDefault(); window.dispatchEvent(new KeyboardEvent('keydown', {code: 'Space'})); }}
-                  onPointerUp={(e) => { e.preventDefault(); window.dispatchEvent(new KeyboardEvent('keyup', {code: 'Space'})); }}
-                  className="w-20 h-20 bg-purple-600/80 backdrop-blur-md rounded-full border-4 border-white/30 active:scale-90 flex items-center justify-center font-black italic touch-none"
-                >JUMP</button>
-              </div>
+
+              {/* Прыжок (скрыт в бесконечном режиме) */}
+              {gameState === 'LEVELS' && (
+                <div className="pointer-events-auto">
+                  <button 
+                    onPointerDown={(e) => { e.preventDefault(); window.dispatchEvent(new KeyboardEvent('keydown', {code: 'Space'})); }}
+                    onPointerUp={(e) => { e.preventDefault(); window.dispatchEvent(new KeyboardEvent('keyup', {code: 'Space'})); }}
+                    className="w-24 h-24 bg-purple-600/60 backdrop-blur-xl rounded-full border-4 border-white/30 active:scale-90 flex items-center justify-center font-black italic touch-none shadow-2xl"
+                  >
+                    JUMP
+                  </button>
+                </div>
+              )}
             </div>
           </div>
+
+          {/* Кнопка выхода */}
+          <button 
+            onClick={() => setGameState('MENU')} 
+            className="absolute top-16 right-4 md:static md:mt-4 text-white/30 text-[10px] font-bold uppercase tracking-widest hover:text-white"
+          >
+            В МЕНЮ [ESC]
+          </button>
         </div>
       )}
     </div>
